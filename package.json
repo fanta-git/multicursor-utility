@@ -10,14 +10,19 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:multicursor-utility.insertTabstops"
+        "onCommand:multicursor-utility.convertTabstops",
+		"onCommand:multicursor-utility.insertMulticursor"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "multicursor-utility.insertTabstops",
+				"command": "multicursor-utility.convertTabstops",
 				"title": "Insert tabstops at multicursors position"
+			},
+			{
+				"command": "multicursor-utility.insertMulticursor",
+				"title": "Insert multicursor with specified number of cursors"
 			}
 		]
 	},
