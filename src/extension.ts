@@ -3,27 +3,29 @@ import * as vscode from 'vscode';
 export function activate(context: vscode.ExtensionContext) {
     console.log('Congratulations, your extension "multicursor-utility" is now active!');
 
-    const getLineRange = ({ start, end }: { start: vscode.Position, end: vscode.Position }) => new vscode.Selection(
-        new vscode.Position(start.line, 0),
-        new vscode.Position(end.line + 1, 0)
+    const geneGetLineRange = (doc: vscode.TextDocument) => ({ start, end }: { start: vscode.Position, end: vscode.Position }) => doc.validateRange(
+        new vscode.Selection(start.line, 0, end.line + 1, 0)
     );
 
-    const insertMultiCursor = vscode.commands.registerCommand('super-outdent.insertMultiCursor', () => {
+    const insertTabstops = vscode.commands.registerCommand('multicursor-utility.insertTabstops', () => {
         const editor = vscode.window.activeTextEditor;
         if (editor === undefined) return;
         const doc = editor.document;
+        const getLineRange = geneGetLineRange(doc);
         const curSelections = editor.selections;
         if (!curSelections.length) return;
 
-        const startLine = curSelections[0].active.line;
+        const sorted = [...curSelections].sort((a, b) => (
+            b.active.line - a.active.line || b.active.character - a.active.character
+        ));
         const snippetRange = getLineRange({
-            start: curSelections[0].active,
-            end: curSelections[curSelections.length - 1].active
+            start: sorted[sorted.length - 1].active,
+            end: sorted[0].active,
         });
 
         const text = doc.getText(snippetRange).split('\n');
-        [...curSelections].reverse().forEach((v, i) => {
-            const line = v.active.line - startLine;
+        sorted.forEach((v, i) => {
+            const line = v.active.line - sorted[sorted.length - 1].active.line;
             const char = v.active.character;
             const textLine = text[line];
 
@@ -34,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
         editor.insertSnippet(snippet, snippetRange);
     });
 
-    context.subscriptions.push(insertMultiCursor);
+    context.subscriptions.push(insertTabstops);
 }
 
 export function deactivate() {}
