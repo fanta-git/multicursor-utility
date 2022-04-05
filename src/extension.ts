@@ -10,14 +10,15 @@ export function activate(context: vscode.ExtensionContext) {
     const range = (size: number) => [...Array(size)].map((_, i) => i);
     const abs = (number: number) => number < 0 ? -number : number;
     const isUpper = (str: string) => /^[A-Z]+$/.test(str);
-    /* eslint-disable @typescript-eslint/naming-convention */
     const baseReg: Record<string, string> = {
-        b: '[01]',
-        o: '[0-7]',
-        d: '[0-9]',
-        x: '[0-9a-fA-F]'
+        b: '01',
+        o: '01234567',
+        d: '0123456789',
+        x: '0123456789abcdef',
+        a: 'abcdefghijklmnopqrstuvwxyz',
+        あ: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゐゆゑよわをん',
+        ア: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤヰユヱヨワヲン',
     };
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     context.subscriptions.push(
         vscode.commands.registerCommand('multicursor-utility.convertTabstops', () => {
@@ -76,13 +77,15 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('multicursor-utility.insertSerial', async () => {
             const parsePadStart = (text: string, base: keyof typeof baseReg = 'd') => {
                 const nR = baseReg[base];
+                const padPatarnComma = new RegExp(`^(.*),(\\d*),(-?[${nR}]*)$`, 'i');
+                const padPatarnSimple = new RegExp(`^(.*?)(-?(?!0)[${nR}]*)$`, 'i');
 
-                if (/^.+,\d+,.*$/.test(text)) {
-                    const [,padStr, padNumInput, startInput] = text.match(/^(.+),(\d+),([0-9]*)$/) ?? [];
+                if (padPatarnComma.test(text)) {
+                    const [,padStr, padNumInput, startInput] = text.match(padPatarnComma) ?? [];
                     const padNum = Number(padNumInput);
                     return { padStr, padNum, startInput };
                 } else {
-                    const [,padStr, startInput] = text.match(new RegExp(`^(.*?)(-?(?!0)${nR}*|0)$`)) ?? [];
+                    const [,padStr, startInput] = text.match(padPatarnSimple) ?? [];
                     const padNum = text.length - startInput.length && text.length;
                     return { padStr, padNum, startInput };
                 }
@@ -100,23 +103,21 @@ export function activate(context: vscode.ExtensionContext) {
             if (editor === undefined) return;
             const curSelections = editor.selections;
             if (!curSelections.length) return;
+            const startStepParserReg = /(?=(?<!,)[+-][^+-]*$)/;
             const input = await vscode.window.showInputBox({
                 validateInput: text => {
-                    const [padandstartInput, stepInput] = text.split(/(?=[+-][^+-]*$)/);
-                    if (stepInput && !/^[+-](0[bBoOxX])?\d+$/.test(stepInput)) return "第二引数には数字を入力してください。進数指定をする場合は0X,0x,0O,0o,0B,0bから始めてください。"; 
-                    if (stepInput && /^-0[bBoO]\d+$/.test(stepInput)) return "第二引数での負の数は10進数と16進数でしか指定できません"; 
+                    const [padandstartInput, stepInput] = text.split(startStepParserReg);
+                    if (stepInput && !/^[+-](0[box])?\d+$/i.test(stepInput)) return "第二引数には数字を入力してください。進数指定をする場合は0X,0x,0O,0o,0B,0bから始めてください。"; 
+                    if (stepInput && /^-0[bo]\d+$/i.test(stepInput)) return "第二引数での負の数は10進数と16進数でしか指定できません"; 
                     return null;
                 }
             });
             if (!input) return;
-            const [padandstartInput, stepInput] = input.split(/(?=[+-][^+-]*$)/);
-            const list: Record<string, number> = { b: 2, o: 8, d: 10, x: 16 };
-            const [pre] = stepInput?.match(/(?<=^[+-]0)[bBoOxX]/) ?? ['d'];
-            const base = list[pre.toLowerCase()];
+            const [padandstartInput, stepInput] = input.split(startStepParserReg);
+            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]/i) ?? ['d'];
+            const base = baseReg[pre.toLowerCase()].length;
             const { padStr, padNum, startInput } = parsePadStart(padandstartInput, pre.toLowerCase());
             const start = parseInt(startInput, base) || 0;
-            console.log(startInput, base);
-            console.log(start, base);
             const step = parseInt(stepInput, base) || 1;
             await editor.edit(edit => {
                 for (const [indexStr, { active }] of Object.entries(curSelections)) {
