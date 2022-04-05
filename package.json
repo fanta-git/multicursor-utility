@@ -11,7 +11,8 @@
 	],
 	"activationEvents": [
         "onCommand:multicursor-utility.convertTabstops",
-		"onCommand:multicursor-utility.insertMulticursor"
+		"onCommand:multicursor-utility.insertMulticursor",
+		"onCommand:multicursor-utility.insertSerial"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -23,6 +24,10 @@
 			{
 				"command": "multicursor-utility.insertMulticursor",
 				"title": "Insert multicursor with specified number of cursors"
+			},
+			{
+				"command": "multicursor-utility.insertSerial",
+				"title": "Insert serials at multicursors position"
 			}
 		]
 	},

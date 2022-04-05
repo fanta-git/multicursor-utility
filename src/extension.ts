@@ -8,6 +8,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
     const insertString = (index: number, text: string, word: string) => text.slice(0, index) + word + text.slice(index);
     const range = (size: number) => [...Array(size)].map((_, i) => i);
+    const abs = (number: number) => number < 0 ? -number : number;
 
     context.subscriptions.push(
         vscode.commands.registerCommand('multicursor-utility.convertTabstops', () => {
@@ -62,6 +63,56 @@ export function activate(context: vscode.ExtensionContext) {
                 );
             }
             editor.selections = newCurSelections;
+        }),
+        vscode.commands.registerCommand('multicursor-utility.insertSerial', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor === undefined) return;
+            const doc = editor.document;
+            const getLineRange = geneGetLineRange(doc);
+            const curSelections = editor.selections;
+            if (!curSelections.length) return;
+
+            const input = await vscode.window.showInputBox({
+                validateInput: text => {
+                    const [padandstartInput, stepInput, ...over] = text.split(/(?<!\\):/);
+                    if (over.length) return ":が多すぎます。文字として:を使う時は\\:を入力してください。";
+                    if (stepInput && !/^-?(0[bBoOxX])?\d+$/.test(stepInput)) return "第二引数には数字を入力してください。進数指定をする場合は0X,0x,0O,0o,0B,0bから始めてください。"; 
+                    return null;
+                }
+            });
+            if (!input) return;
+
+            const [padandstartInput, stepInput] = input.split(/(?<!\\):/);
+
+            const parcePadStart = (text: string) => {
+                if (/^.+,\d+,.*$/.test(padandstartInput)) {
+                    const [,padStr, numInput, startInput] = padandstartInput.match(/^(.+),(-?\d+),(.*)$/) ?? [];
+                    const padNum = Number(numInput);
+                    return { padStr, padNum, startInput };
+                } else {
+                    const [all, padStr, startInput] = padandstartInput.match(/^(.*?)((?!0)[0-9]*|0)$/) ?? [];
+                    const padNum = all.length;
+                    return { padStr, padNum, startInput };
+                }
+            };
+            const shaping = (number: number, padNum: number, padStr: string = ' ') => {
+                if (!padNum) return number.toString();
+                const padded = abs(number).toString().padStart(padNum, padStr);
+                if (0 <= number) return padded;
+                if (abs(number).toString().length < padNum) return padded.replace(/^./, '-');
+                return '-' + padded;
+            };
+            
+            const { padStr, padNum, startInput } = parcePadStart(padandstartInput);
+            const start = Number(startInput);
+            const step = Number(stepInput || 1);
+            await editor.edit(edit => {
+                for (const [indexStr, { active }] of Object.entries(curSelections)) {
+                    const insertNum = start + Number(indexStr) * step;
+                    const insertStr = shaping(insertNum, padNum, padStr);
+                    edit.insert(active, insertStr);
+                }
+            });
         }),
     );
 }
