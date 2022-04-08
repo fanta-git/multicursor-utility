@@ -19,15 +19,15 @@
 		"commands": [
 			{
 				"command": "multicursor-utility.convertTabstops",
-				"title": "Insert tabstops at multicursors position"
+				"title": "mc-utility: Convert tabstops from multicursors"
 			},
 			{
 				"command": "multicursor-utility.insertMulticursor",
-				"title": "Insert multicursor with specified number of cursors"
+				"title": "mc-utility: Insert multicursor with specified number of cursors"
 			},
 			{
 				"command": "multicursor-utility.insertSerial",
-				"title": "Insert serials at multicursors position"
+				"title": "mc-utility: Insert serials at multicursors position"
 			}
 		]
 	},

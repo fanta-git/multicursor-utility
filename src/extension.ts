@@ -10,15 +10,22 @@ export function activate(context: vscode.ExtensionContext) {
     const range = (size: number) => [...Array(size)].map((_, i) => i);
     const abs = (number: number) => number < 0 ? -number : number;
     const isUpper = (str: string) => /^[A-Z]+$/.test(str);
-    const baseReg: Record<string, string> = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    const baseSerialObj: Record<string, string> = {
         b: '01',
+        B: '01',
         o: '01234567',
+        O: '01234567',
         d: '0123456789',
+        D: '0123456789',
         x: '0123456789abcdef',
+        X: '0123456789ABCDEF',
         a: 'abcdefghijklmnopqrstuvwxyz',
+        A: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
         あ: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゐゆゑよわをん',
         ア: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤヰユヱヨワヲン',
     };
+    /* eslint-enable @typescript-eslint/naming-convention */
 
     context.subscriptions.push(
         vscode.commands.registerCommand('multicursor-utility.convertTabstops', () => {
@@ -43,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const char = v.active.character;
                 const textLine = text[line];
 
-                const newText = insertString(char, textLine, String(i && curSelections.length - i));
+                const newText = insertString(char, textLine, '$' + String(i && curSelections.length - i));
                 text[line] = newText;
             });
             const snippet = new vscode.SnippetString(text.join('\n'));
@@ -55,74 +62,74 @@ export function activate(context: vscode.ExtensionContext) {
             const curSelections = editor.selections;
 
             const input = await vscode.window.showInputBox({
-                validateInput: text => !text || /^\d*(:.+)?$/.test(text) ? null : "int (':' string)?"
+                validateInput: text => !text || /^\d*(:.+(\d*)?)?$/.test(text) ? null : "Error!"
             });
             if (!input) return;
-            const [inputNum, inputWord] = input.split(/(?<=^[^:]*):/);
+            const [inputNum, inputWord, inputGap] = input.split(/(?<!\\):/);
             const num = Number(inputNum);
-            const word = inputWord ?? ' ';
+            const word = inputWord ?? '';
+            const gap = Number(inputGap) || word.length || 1;
+            if (!num) return;
 
             const newCurSelections = [] as vscode.Selection[];
             for (const cur of curSelections) {
                 await editor.edit(edit => edit.insert(cur.active, word.repeat(num)));
                 newCurSelections.push(
                     ...range(num).map(v => new vscode.Selection(
-                        cur.active.translate(0, word.length * (v + 1)),
-                        cur.active.translate(0, word.length * (v + 1))
+                        cur.active.translate(0, gap * v),
+                        cur.active.translate(0, gap * v)
                     ))
                 );
             }
             editor.selections = newCurSelections;
         }),
         vscode.commands.registerCommand('multicursor-utility.insertSerial', async () => {
-            const parsePadStart = (text: string, base: keyof typeof baseReg = 'd') => {
-                const nR = baseReg[base];
-                const padPatarnComma = new RegExp(`^(.*),(\\d*),(-?[${nR}]*)$`, 'i');
-                const padPatarnSimple = new RegExp(`^(.*?)(-?(?!0)[${nR}]*)$`, 'i');
+            const parsePadStart = (text: string, base: keyof typeof baseSerialObj = 'd') => {
+                const nR = baseSerialObj[base];
+                const padPatarnCommaReg = new RegExp(`^(.*),(\\d*),(-?[${nR}]*)$`);
+                const padPatarnSimpleReg = new RegExp(`^(.*?)(-?(?!0)[${nR}]*)$`);
 
-                if (padPatarnComma.test(text)) {
-                    const [,padStr, padNumInput, startInput] = text.match(padPatarnComma) ?? [];
+                if (padPatarnCommaReg.test(text)) {
+                    const [,padStr, padNumInput, startInput] = text.match(padPatarnCommaReg) ?? [];
                     const padNum = Number(padNumInput);
                     return { padStr, padNum, startInput };
                 } else {
-                    const [,padStr, startInput] = text.match(padPatarnSimple) ?? [];
+                    const [,padStr, startInput] = text.match(padPatarnSimpleReg) ?? [];
                     const padNum = text.length - startInput.length && text.length;
                     return { padStr, padNum, startInput };
                 }
             };
-            const shaping = (number: number, padNum: number, padStr = ' ', base = 10, upper = false) => {
-                if (!padNum) return upper ? number.toString(base).toUpperCase() : number.toString(base).toLowerCase();
-                const padded = abs(number).toString(base).padStart(padNum, padStr);
-                const shaped = upper ? padded.toUpperCase() : padded.toLowerCase();
-                if (0 <= number) return shaped;
-                if (abs(number).toString(base).length < padNum) return shaped.replace(/^./, '-');
-                return '-' + shaped;
+            const shaping = (number: number, padNum: number, padStr = ' ', base = 'd') => {
+                const converted = (convFromDec(number, baseSerialObj[base]) || baseSerialObj[base][0]).padStart(padNum, padStr);
+                if (0 <= number) return converted;
+                return '-' + (converted.length < padNum ? converted.slice(1) : converted);
             };
+            const convToDec = (before: string, serial: string): number => before.length === 1 ? serial.indexOf(before) : (convToDec(before.slice(0, -1), serial) + ~~(serial.charAt(0) !== '0')) * serial.length + serial.indexOf(before.slice(-1));
+            const convFromDec = (before: number, serial: string): string => before < serial.length ? serial.charAt(before) : convFromDec(before / serial.length - ~~(serial.charAt(0) !== '0') | 0, serial) + serial.charAt(before % serial.length);
 
             const editor = vscode.window.activeTextEditor;
             if (editor === undefined) return;
             const curSelections = editor.selections;
             if (!curSelections.length) return;
-            const startStepParserReg = /(?=(?<!,)[+-][^+-]*$)/;
+            const argParserReg = /(?=(?<!,)[+-][^+-]*$)/;
             const input = await vscode.window.showInputBox({
-                validateInput: text => {
-                    const [padandstartInput, stepInput] = text.split(startStepParserReg);
-                    if (stepInput && !/^[+-](0[box])?\d+$/i.test(stepInput)) return "第二引数には数字を入力してください。進数指定をする場合は0X,0x,0O,0o,0B,0bから始めてください。"; 
-                    if (stepInput && /^-0[bo]\d+$/i.test(stepInput)) return "第二引数での負の数は10進数と16進数でしか指定できません"; 
-                    return null;
-                }
+                // validateInput: text => {
+                //     const [padandstartInput, stepInput] = text.split(argParserReg);
+                //     return null;
+                // }
             });
             if (!input) return;
-            const [padandstartInput, stepInput] = input.split(startStepParserReg);
-            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]/i) ?? ['d'];
-            const base = baseReg[pre.toLowerCase()].length;
-            const { padStr, padNum, startInput } = parsePadStart(padandstartInput, pre.toLowerCase());
-            const start = parseInt(startInput, base) || 0;
-            const step = parseInt(stepInput, base) || 1;
+            const [padandstartInput, stepInput] = input.split(argParserReg);
+            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]|(?<=^[+-])[a]/i) ?? ['d'];
+            const baseSerial = baseSerialObj[pre];
+            const [stepStr] = stepInput?.match(new RegExp(`[${baseSerial}]*$`)) ?? [''];
+            const { padStr, padNum, startInput } = parsePadStart(padandstartInput, pre);
+            const start = convToDec(startInput, baseSerial) || 0;
+            const step = convToDec(stepStr, baseSerial) || 1;
             await editor.edit(edit => {
                 for (const [indexStr, { active }] of Object.entries(curSelections)) {
                     const insertNum = start + Number(indexStr) * step;
-                    const insertStr = shaping(insertNum, padNum, padStr, base, isUpper(pre));
+                    const insertStr = shaping(insertNum, padNum, padStr, pre);
                     edit.insert(active, insertStr);
                 }
             });
