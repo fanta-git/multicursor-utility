@@ -24,20 +24,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     /* eslint-disable @typescript-eslint/naming-convention */
     const baseSerialObj: Record<string, string> = {
-        b: '01',
-        B: '01',
-        o: '01234567',
-        O: '01234567',
-        d: '0123456789',
-        D: '0123456789',
-        x: '0123456789abcdef',
-        X: '0123456789ABCDEF',
-        a: 'abcdefghijklmnopqrstuvwxyz',
-        A: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
         あ: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゐゆゑよわをん',
         ア: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤヰユヱヨワヲン',
         い: 'いろはにほへとちりぬるをわかよたれそつねならむうゐのおくやまけふこえてあさきゆめみしゑひもせす',
         イ: 'イロハニホヘトチリヌルヲワカヨタレソツネナラムウヰノオクヤマケフコエテアサキユメミシヱヒモセス',
+        a: 'abcdefghijklmnopqrstuvwxyz',
+        A: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        d: '0123456789',
+        D: '0123456789',
+        b: '01',
+        B: '01',
+        o: '01234567',
+        O: '01234567',
+        x: '0123456789abcdef',
+        X: '0123456789ABCDEF',
     };
     /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -145,7 +145,9 @@ export function activate(context: vscode.ExtensionContext) {
             });
             if (!input) return;
             const [padandstartInput, stepInput] = input.split(argParserReg);
-            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]|(?<=^[＋+-])[aあア]/i) ?? ['d'];
+            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]|(?<=^[＋+-])[aあアいイ]/i)
+                ?? Object.entries(baseSerialObj).find(v => v[1].includes(padandstartInput.slice(-1)))
+                ?? ['d'];
             const baseSerial = baseSerialObj[pre];
             const [stepStr] = stepInput?.match(new RegExp(`[${baseSerial}]*$`)) ?? [''];
             const { padStr, padNum, startInput } = parsePadStart(padandstartInput, pre);
