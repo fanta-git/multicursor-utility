@@ -10,6 +10,18 @@ export function activate(context: vscode.ExtensionContext) {
     const range = (size: number) => [...Array(size)].map((_, i) => i);
     const abs = (number: number) => number < 0 ? -number : number;
     const isUpper = (str: string) => /^[A-Z]+$/.test(str);
+    const parseText = (text: string) => text.split('').reduce((p, c) => p.concat(c.match(/[ -~]/) ? [c] : [c, '']), [] as string[]);
+    const padZenkaku = (mainText: string, padNum: number, padText = ' ', fractionText = ' ') => {
+        const parseMain = parseText(mainText);
+        const parsePad = parseText(padText);
+        if (parseMain.length >= padNum) return mainText;
+        const len = padNum - parseMain.length;
+        const repeatLen = len / parsePad.length | 0;
+        const modLen = len % parsePad.length;
+        const padding = padText.repeat(repeatLen) + padText.slice(0, modLen) + (modLen && !parsePad[modLen - 1] ? fractionText : '') + mainText;
+        return padding;
+    };
+
     /* eslint-disable @typescript-eslint/naming-convention */
     const baseSerialObj: Record<string, string> = {
         b: '01',
@@ -24,6 +36,8 @@ export function activate(context: vscode.ExtensionContext) {
         A: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
         あ: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゐゆゑよわをん',
         ア: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤヰユヱヨワヲン',
+        い: 'いろはにほへとちりぬるをわかよたれそつねならむうゐのおくやまけふこえてあさきゆめみしゑひもせす',
+        イ: 'イロハニホヘトチリヌルヲワカヨタレソツネナラムウヰノオクヤマケフコエテアサキユメミシヱヒモセス',
     };
     /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -100,18 +114,29 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             };
             const shaping = (number: number, padNum: number, padStr = ' ', base = 'd') => {
-                const converted = (convFromDec(number, baseSerialObj[base]) || baseSerialObj[base][0]).padStart(padNum, padStr);
+                const converted = textPadder(convFromDec(number, baseSerialObj[base]) || baseSerialObj[base][0], padNum, padStr);
                 if (0 <= number) return converted;
                 return '-' + (converted.length < padNum ? converted.slice(1) : converted);
             };
-            const convToDec = (before: string, serial: string): number => before.length === 1 ? serial.indexOf(before) : (convToDec(before.slice(0, -1), serial) + ~~(serial.charAt(0) !== '0')) * serial.length + serial.indexOf(before.slice(-1));
+            const convToDec = (before: string, serial: string): number => before.length <= 1 ? serial.indexOf(before) : (convToDec(before.slice(0, -1), serial) + ~~(serial.charAt(0) !== '0')) * serial.length + serial.indexOf(before.slice(-1));
             const convFromDec = (before: number, serial: string): string => before < serial.length ? serial.charAt(before) : convFromDec(before / serial.length - ~~(serial.charAt(0) !== '0') | 0, serial) + serial.charAt(before % serial.length);
+
+            const wordCounter = (text: string) => text.length * 2 - (text.match(/[ -~]/g)?.length ?? 0);
+            const textParser = (text: string) => text.split('').reduce((p, c) => p.concat(c.match(/[ -~]/) ? [c] : ['', c]), [] as string[]);
+            const textPadder = (mainText: string, padNum: number, padText = ' ', fractionText = ' ') => {
+                const parsePad = textParser(padText);
+                const len = padNum - wordCounter(mainText);
+                if (len < 0) return mainText;
+                const repeatLen = len / parsePad.length | 0;
+                const modLen = len % parsePad.length;
+                return padText.repeat(repeatLen) + parsePad.slice(0, modLen).join('') + (modLen && !parsePad[modLen - 1] ? fractionText : '') + mainText;
+            };
 
             const editor = vscode.window.activeTextEditor;
             if (editor === undefined) return;
             const curSelections = editor.selections;
             if (!curSelections.length) return;
-            const argParserReg = /(?=(?<!,)[+-][^+-]*$)/;
+            const argParserReg = /(?=(?<!,)[＋+-][^＋+-]*$)/;
             const input = await vscode.window.showInputBox({
                 // validateInput: text => {
                 //     const [padandstartInput, stepInput] = text.split(argParserReg);
@@ -120,12 +145,13 @@ export function activate(context: vscode.ExtensionContext) {
             });
             if (!input) return;
             const [padandstartInput, stepInput] = input.split(argParserReg);
-            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]|(?<=^[+-])[a]/i) ?? ['d'];
+            const [pre] = stepInput?.match(/(?<=^[+-]0)[box]|(?<=^[＋+-])[aあア]/i) ?? ['d'];
             const baseSerial = baseSerialObj[pre];
             const [stepStr] = stepInput?.match(new RegExp(`[${baseSerial}]*$`)) ?? [''];
             const { padStr, padNum, startInput } = parsePadStart(padandstartInput, pre);
             const start = convToDec(startInput, baseSerial) || 0;
             const step = convToDec(stepStr, baseSerial) || 1;
+            console.log(start, step);
             await editor.edit(edit => {
                 for (const [indexStr, { active }] of Object.entries(curSelections)) {
                     const insertNum = start + Number(indexStr) * step;
