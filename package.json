@@ -34,7 +34,33 @@
 				"command": "multicursor-utility.swapTexts",
 				"title": "mc-utility: Swap Texts"
 			}
+		],
+		"keybindings": [
+			{
+				"command": "multicursor-utility.convertTabstops",
+				"key": "cmd+m cmd+c",
+				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+			},
+			{
+				"command": "multicursor-utility.insertMulticursor",
+				"key": "cmd+m cmd+n",
+				"when": "editorFocus && !editorReadonly"
+			},
+			{
+				"command": "multicursor-utility.insertSerial",
+				"key": "cmd+m cmd+0",
+				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+			},
+			{
+				"command": "multicursor-utility.swapTexts",
+				"key": "cmd+m cmd+s",
+				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+			}
 		]
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/fanta-git/multicursor-utility"
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
