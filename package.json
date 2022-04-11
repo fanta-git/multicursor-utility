@@ -12,7 +12,8 @@
 	"activationEvents": [
         "onCommand:multicursor-utility.convertTabstops",
 		"onCommand:multicursor-utility.insertMulticursor",
-		"onCommand:multicursor-utility.insertSerial"
+		"onCommand:multicursor-utility.insertSerial",
+		"onCommand:multicursor-utility.swapTexts"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -28,6 +29,10 @@
 			{
 				"command": "multicursor-utility.insertSerial",
 				"title": "mc-utility: Insert Serials"
+			},
+			{
+				"command": "multicursor-utility.swapTexts",
+				"title": "mc-utility: Swap Texts"
 			}
 		]
 	},

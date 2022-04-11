@@ -157,6 +157,20 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             });
         }),
+        vscode.commands.registerCommand('multicursor-utility.swapTexts', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor === undefined) return;
+            const doc = editor.document;
+            const curSelections = editor.selections;
+            if (curSelections.length < 2) return;
+            const textA = doc.getText(curSelections[0]);
+            const textB = doc.getText(curSelections[1]);
+
+            await editor.edit(edit => {
+                edit.replace(curSelections[0], textB);
+                edit.replace(curSelections[1], textA);
+            });
+        }),
     );
 }
 
