@@ -100,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const nR = baseSerialObj[base];
 
                 if (text.includes(',')) {
-                    const [padStr, padNumInput, startInput] = text.split(/,(?=[^,]*(,[^,]*)?$)/);
+                    const [padStr, startInput, padNumInput] = text.split(/,(?!.*,.*,)/);
                     const padNum = Number(padNumInput) || 0;
                     const [startStr] = startInput.match(new RegExp(`[${nR}]*$`)) ?? [''];
                     return { padStr, padNum, startStr };
@@ -136,7 +136,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (!curSelections.length) return;
             const argParserReg = /(?=(?<!,)[＋+-][^＋+-]*$)/;
             const input = await vscode.window.showInputBox({
-                prompt: 'example: "*,4,1+1", "001-0x1", "c+a"',
+                prompt: 'example: "*,1,4+1", "001-0x1", "c+a"',
                 title: 'Insert serials at multicursors position'
             });
             if (!input) return;
@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
                 ?? ['d'];
             const baseSerial = baseSerialObj[pre];
             const [stepStr] = stepInput?.match(new RegExp(`[${baseSerial}]*$`)) ?? [''];
-            const { padStr, padNum, startStr } = parsePadStart(padandstartInput, pre);
+            const { padStr, startStr, padNum } = parsePadStart(padandstartInput, pre);
             const start = convToDec(startStr, baseSerial) || 0;
             const step = convToDec(stepStr, baseSerial) || 1;
             await editor.edit(edit => {

@@ -39,22 +39,22 @@
 			{
 				"command": "multicursor-utility.convertTabstops",
 				"key": "cmd+m cmd+c",
-				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+				"when": "editorTextFocus && !editorReadonly && editorHasMultipleSelections"
 			},
 			{
 				"command": "multicursor-utility.insertMulticursor",
 				"key": "cmd+m cmd+n",
-				"when": "editorFocus && !editorReadonly"
+				"when": "editorTextFocus && !editorReadonly"
 			},
 			{
 				"command": "multicursor-utility.insertSerial",
 				"key": "cmd+m cmd+0",
-				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+				"when": "editorTextFocus && !editorReadonly && editorHasMultipleSelections"
 			},
 			{
 				"command": "multicursor-utility.swapTexts",
-				"key": "cmd+m cmd+s",
-				"when": "editorFocus && editorHasMultipleSelections && !editorReadonly"
+				"key": "cmd+m cmd+x",
+				"when": "editorTextFocus && !editorReadonly && editorHasMultipleSelections"
 			}
 		]
 	},
