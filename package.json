@@ -14,7 +14,8 @@
 		"onCommand:multicursor-utility.insertMulticursor",
 		"onCommand:multicursor-utility.insertSerial",
 		"onCommand:multicursor-utility.swapTexts",
-		"onCommand:multicursor-utility.deleatBothOut"
+		"onCommand:multicursor-utility.deleatBothOut",
+		"onCommand:multicursor-utility.deleatBothIn"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -36,7 +37,11 @@
 				"title": "mc-utility: Swap Texts"
 			},
 			{
-				"command": "multicursor-utility.deleatBothEnds",
+				"command": "multicursor-utility.deleatBothOut",
+				"title": "mc-utility: Deleat Both Ends"
+			},
+			{
+				"command": "multicursor-utility.deleatBothIn",
 				"title": "mc-utility: Deleat Both Ends"
 			}
 		],
@@ -64,6 +69,11 @@
 			{
 				"command": "multicursor-utility.deleatBothOut",
 				"key": "shift+backspace",
+				"when": "editorTextFocus && !editorReadonly && editorHasSelection"
+			},
+			{
+				"command": "multicursor-utility.deleatBothIn",
+				"key": "cmd+shift+backspace",
 				"when": "editorTextFocus && !editorReadonly && editorHasSelection"
 			}
 		]
