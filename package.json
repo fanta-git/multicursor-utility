@@ -13,7 +13,8 @@
         "onCommand:multicursor-utility.convertTabstops",
 		"onCommand:multicursor-utility.insertMulticursor",
 		"onCommand:multicursor-utility.insertSerial",
-		"onCommand:multicursor-utility.swapTexts"
+		"onCommand:multicursor-utility.swapTexts",
+		"onCommand:multicursor-utility.deleatBothOut"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -33,6 +34,10 @@
 			{
 				"command": "multicursor-utility.swapTexts",
 				"title": "mc-utility: Swap Texts"
+			},
+			{
+				"command": "multicursor-utility.deleatBothEnds",
+				"title": "mc-utility: Deleat Both Ends"
 			}
 		],
 		"keybindings": [
@@ -55,6 +60,11 @@
 				"command": "multicursor-utility.swapTexts",
 				"key": "cmd+m cmd+x",
 				"when": "editorTextFocus && !editorReadonly && editorHasMultipleSelections"
+			},
+			{
+				"command": "multicursor-utility.deleatBothOut",
+				"key": "shift+backspace",
+				"when": "editorTextFocus && !editorReadonly && editorHasSelection"
 			}
 		]
 	},

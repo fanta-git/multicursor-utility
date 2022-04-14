@@ -171,6 +171,38 @@ export function activate(context: vscode.ExtensionContext) {
                 edit.replace(curSelections[1], textA);
             });
         }),
+        vscode.commands.registerCommand('multicursor-utility.deleatBothOut', async () => {
+            const getBeforeOne = (pos: vscode.Position) => {
+                if (0 < pos.character) return pos.translate(0, -1);
+                if (0 === pos.line) return pos;
+                return doc.lineAt(pos.line - 1).range.end;
+            };
+            const getAfterOne = (pos: vscode.Position) => {
+                const lineEnd = doc.lineAt(pos.line).range.end;
+                if (!pos.isEqual(lineEnd)) return pos.translate(0, 1);
+                return new vscode.Position(pos.line + 1, 0);
+            };
+            
+            const editor = vscode.window.activeTextEditor;
+            if (editor === undefined) return;
+            const doc = editor.document;
+            const curSelections = editor.selections;
+
+            await editor.edit(edit => {
+                for (const cur of curSelections) {
+                    const before = new vscode.Range(
+                        getBeforeOne(cur.start),
+                        cur.start
+                    );
+                    const after = new vscode.Range(
+                        cur.end,
+                        getAfterOne(cur.end)
+                    );
+                    if (!before.isEmpty) edit.delete(before);
+                    if (!after.isEmpty) edit.delete(after);
+                }
+            });
+        })
     );
 }
 
